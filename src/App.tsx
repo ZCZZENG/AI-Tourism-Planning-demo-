@@ -10,15 +10,19 @@ import { deletePlan, getSavedPlans, savePlan } from '@/lib/storage';
 import type { ItineraryPlan, RecommendationItem, UserPreference } from '@/types';
 
 type RoutePath = '/' | '/planning' | '/recommendation' | '/itinerary' | '/saved';
+
 const ROUTE_LIST: RoutePath[] = ['/', '/planning', '/recommendation', '/itinerary', '/saved'];
 
 const CITIES = ['重庆', '成都', '北京', '西安', '上海'];
 const DURATION = [1, 2, 3, 4, 5];
+
 const BUDGET = [
   { value: 'low', label: '低预算', desc: '500-1000' },
   { value: 'medium', label: '中预算', desc: '1000-3000' },
   { value: 'high', label: '高预算', desc: '3000+' },
 ] as const;
+
+const INTERESTS = ['美食', '历史文化', '自然风景', '城市漫步', '艺术展览', '夜生活', '打卡拍照', '小众体验'];
 
 const STYLE = [
   { value: 'relaxed', label: '轻松悠闲' },
@@ -42,12 +46,12 @@ const BUDGET_LABEL_MAP: Record<UserPreference['budgetLevel'], string> = {
   high: '高预算',
 };
 
-const INTERESTS = ['美食', '历史文化', '自然风景', '城市漫步', '艺术展览', '夜生活', '打卡拍照', '小众体验'];
 const STAMINA = [
   { value: 'light', label: '轻度' },
   { value: 'medium', label: '中等' },
   { value: 'high', label: '高强度' },
 ] as const;
+
 const TRANSPORTS = ['步行', '地铁', '公交', '打车', '共享单车'];
 const COMPANIONS = ['1 人', '2 人', '3-4 人', '5 人以上'];
 
@@ -82,12 +86,17 @@ function App() {
       setRoute(ROUTE_LIST.includes(current) ? current : '/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
     window.addEventListener('popstate', onPopState);
     onPopState();
+
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const selectedCount = useMemo(() => recommendations.filter((i) => i.selected).length, [recommendations]);
+  const selectedCount = useMemo(
+    () => recommendations.filter((i) => i.selected).length,
+    [recommendations],
+  );
 
   const requiredValid = Boolean(
     pref.destination &&
@@ -107,11 +116,14 @@ function App() {
       toast.error('请先补全必填项');
       return;
     }
+
     setLoading(true);
     await new Promise((r) => setTimeout(r, 700));
+
     const nextSeed = regen ? seed + 1 : seed;
     setSeed(nextSeed);
     setRecommendations(generateRecommendations(pref, nextSeed));
+
     setLoading(false);
     navigate('/recommendation');
   };
@@ -121,12 +133,16 @@ function App() {
       toast.error('请至少选择 2 个项目后再生成行程');
       return;
     }
+
     setLoading(true);
     const loadingTexts = ['正在分析你的旅行偏好', '正在组合景点与文化体验', '正在生成故事化行程'];
     toast.loading(loadingTexts[Math.floor(Math.random() * loadingTexts.length)], { id: 'gen' });
+
     await new Promise((r) => setTimeout(r, 1000));
+
     const result = generateItineraryPlan(pref, recommendations.filter((i) => i.selected));
     setPlan(result);
+
     toast.success('行程生成完成', { id: 'gen' });
     setLoading(false);
     navigate('/itinerary');
@@ -140,13 +156,27 @@ function App() {
   };
 
   const exportMarkdown = (p: ItineraryPlan) => {
-    const lines = [`# ${p.destination} ${p.duration}天行程`, '', `创建时间：${new Date(p.createdAt).toLocaleString()}`, ''];
+    const lines = [
+      `# ${p.destination} ${p.duration}天行程`,
+      '',
+      `创建时间：${new Date(p.createdAt).toLocaleString()}`,
+      '',
+    ];
+
     p.days.forEach((d) => {
-      lines.push(`## ${d.title}`, d.story, '');
-      d.items.forEach((i) => lines.push(`- **${i.timeSlot}** ${i.name}（${i.type}）- ${i.description}`));
+      lines.push(`## ${d.title}`);
+      lines.push(d.story);
+      lines.push('');
+      d.items.forEach((i) => {
+        lines.push(`- **${i.timeSlot}** ${i.name}（${i.type}）- ${i.description}`);
+      });
       lines.push('');
     });
-    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+
+    const blob = new Blob([lines.join('\n')], {
+      type: 'text/markdown;charset=utf-8',
+    });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -158,6 +188,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Toaster richColors position="top-center" />
+
       <AppLayout
         onGoHome={() => navigate('/')}
         onStartPlanning={() => navigate('/planning')}
@@ -181,7 +212,7 @@ function App() {
           />
         )}
 
-        {route === '/recommendation' && (
+        {route === '/recommendation' && recommendations.length > 0 && (
           <RecommendationPage
             pref={pref}
             recommendations={recommendations}
@@ -190,7 +221,9 @@ function App() {
             onRefresh={() => void runRecommendations(true)}
             onToggle={(id) =>
               setRecommendations((prev) =>
-                prev.map((item) => (item.id === id ? { ...item, selected: !item.selected } : item)),
+                prev.map((item) =>
+                  item.id === id ? { ...item, selected: !item.selected } : item,
+                ),
               )
             }
             onGeneratePlan={() => void generatePlan()}
@@ -206,7 +239,7 @@ function App() {
           </Card>
         )}
 
-        {route === '/itinerary'        {route === '/itinerary' && plan && (
+        {route === '/itinerary' && plan && (
           <ItineraryPage
             pref={pref}
             plan={plan}
@@ -225,7 +258,10 @@ function App() {
                       ...prev,
                       days: prev.days.map((day) =>
                         day.dayNumber === dayNumber
-                          ? { ...day, items: day.items.filter((it) => it.id !== itemId) }
+                          ? {
+                              ...day,
+                              items: day.items.filter((it) => it.id !== itemId),
+                            }
                           : day,
                       ),
                     }
@@ -312,6 +348,7 @@ function PlanningPage({
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">偏好采集</h2>
+
       <Card>
         <CardContent className="grid gap-4 pt-6">
           <label className="space-y-2">
@@ -520,12 +557,14 @@ function RecommendationPage({
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p>推荐理由：{item.reason}</p>
+
               <div className="flex gap-2">
                 <Badge variant="outline">{item.popularity === 'hot' ? '热门' : '小众'}</Badge>
                 <Badge variant="outline">
                   {item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}
                 </Badge>
               </div>
+
               <div className="rounded-md border bg-slate-50 p-2 text-xs text-slate-600">
                 <p>适合偏好：{fitPreference(item) || '城市漫步 / 文化深度'}</p>
                 <p>
@@ -535,6 +574,7 @@ function RecommendationPage({
                   体验强度：{intensity(item)} ｜ 区域：{areaTag(item)}
                 </p>
               </div>
+
               <Button
                 className="w-full"
                 variant={item.selected ? 'secondary' : 'default'}
@@ -652,6 +692,7 @@ function SavedPage({
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-semibold">已保存行程</h2>
+
       {saved.length === 0 && (
         <Card>
           <CardContent className="pt-6">暂无已保存行程</CardContent>
@@ -669,6 +710,7 @@ function SavedPage({
               {new Date(p.createdAt).toLocaleTimeString()}
             </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2 text-xs">
               <Badge variant="outline">风格：{STYLE_LABEL_MAP[p.preference.travelStyle]}</Badge>
@@ -679,9 +721,11 @@ function SavedPage({
                 </Badge>
               ))}
             </div>
+
             <p className="text-sm text-muted-foreground">
               Day 1 预览：{p.days[0]?.title ?? '待生成'}
             </p>
+
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => onOpen(p)}>打开详情</Button>
               <Button variant="outline" onClick={() => onExport(p)}>
