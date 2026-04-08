@@ -35,6 +35,7 @@ function HeroSection({ onStartPlanning, onViewSample }: HomePageProps) {
           <CardDescription className="text-base leading-7">
             根据目的地、预算、时间和兴趣，生成带有文化深度的专属行程。
           </CardDescription>
+          <p className="text-sm text-muted-foreground">适合大学生、年轻旅行者、轻度自由行用户</p>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button size="lg" onClick={onStartPlanning}>开始规划</Button>
@@ -48,6 +49,16 @@ function HeroSection({ onStartPlanning, onViewSample }: HomePageProps) {
           <CardDescription>重庆 · 3天 · 文化深度游</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
+          <div className="flex gap-2">
+            <Badge variant="outline">中预算</Badge>
+            <Badge variant="outline">文化深度</Badge>
+          </div>
+          <p className="rounded-md border bg-white p-3 text-xs text-slate-600">
+            3天内串联老街、人文与夜景，节奏松弛但内容完整。
+          </p>
+          <p className="rounded-md bg-amber-50 p-2 text-xs font-medium text-amber-700">
+            高亮行程点：洪崖洞夜景 + 江边步行段
+          </p>
           {['Day 1 山城初识', 'Day 2 老街与江景', 'Day 3 博物馆与夜市'].map((d) => (
             <div key={d} className="rounded-md border bg-white p-3 font-medium">{d}</div>
           ))}
@@ -87,33 +98,65 @@ function OutputPreviewSection() {
       <h2 className="text-2xl font-semibold">你将获得什么</h2>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle className="text-base">景点推荐</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">景点推荐</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <ul className="list-disc space-y-1 pl-4"><li>洪崖洞</li><li>李子坝</li><li>磁器口</li></ul>
-            <div className="flex gap-2"><Badge variant="outline">夜景</Badge><Badge variant="outline">地标</Badge><Badge variant="outline">老街</Badge></div>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>洪崖洞</li>
+              <li>李子坝</li>
+              <li>磁器口</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">夜景</Badge>
+              <Badge variant="outline">地标</Badge>
+              <Badge variant="outline">老街</Badge>
+              <Badge variant="outline">2h-3h</Badge>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">美食推荐</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">美食推荐</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <ul className="list-disc space-y-1 pl-4"><li>重庆小面（早餐）</li><li>老火锅（晚餐）</li><li>江边夜市小吃（宵夜）</li></ul>
-            <div className="flex gap-2"><Badge variant="outline">人均预算</Badge><Badge variant="outline">地道口味</Badge></div>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>重庆小面（早餐）</li>
+              <li>老火锅（晚餐）</li>
+              <li>江边夜市小吃（宵夜）</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">人均¥25-120</Badge>
+              <Badge variant="outline">地道口味</Badge>
+              <Badge variant="outline">分时段推荐</Badge>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">文化体验</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">文化体验</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <ul className="list-disc space-y-1 pl-4"><li>川剧变脸</li><li>山城步道</li><li>老茶馆体验</li></ul>
-            <div className="flex gap-2"><Badge variant="outline">非遗</Badge><Badge variant="outline">在地文化</Badge></div>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>川剧变脸</li>
+              <li>山城步道</li>
+              <li>老茶馆体验</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">非遗</Badge>
+              <Badge variant="outline">在地文化</Badge>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">每日行程单</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">每日行程单</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="rounded-md border bg-slate-50 p-3">
+            <div className="rounded-md border bg-white p-3">
               <p>上午：解放碑城市漫步</p>
               <p>下午：山城步道 + 老街体验</p>
               <p>晚上：洪崖洞夜景 + 火锅</p>
@@ -131,9 +174,24 @@ function DifferentiatorSection() {
     <section className="space-y-3">
       <h2 className="text-2xl font-semibold">为什么不是普通攻略网站</h2>
       <div className="grid gap-4 md:grid-cols-3">
-        <Card><CardContent className="pt-6"><p className="font-semibold">按预算筛选推荐内容</p><p className="mt-2 text-sm text-muted-foreground">自动过滤高/中/低预算项目，减少无效信息。</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="font-semibold">不只推荐景点，也补充文化体验</p><p className="mt-2 text-sm text-muted-foreground">从“看景点”升级到“体验一座城市”。</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="font-semibold">自动生成上午 / 下午 / 晚上的行程节奏</p><p className="mt-2 text-sm text-muted-foreground">避免一天安排混乱，形成可执行日程。</p></CardContent></Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="font-semibold">按预算筛选推荐内容</p>
+            <p className="mt-2 text-sm text-muted-foreground">自动过滤高/中/低预算项目，减少无效信息。</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="font-semibold">不只推荐景点，也补充文化体验</p>
+            <p className="mt-2 text-sm text-muted-foreground">从“看景点”升级到“体验一座城市”。</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="font-semibold">自动生成上午 / 下午 / 晚上的行程节奏</p>
+            <p className="mt-2 text-sm text-muted-foreground">避免一天安排混乱，形成可执行日程。</p>
+          </CardContent>
+        </Card>
       </div>
     </section>
   );
