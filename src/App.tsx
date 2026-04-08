@@ -10,6 +10,7 @@ import { deletePlan, getSavedPlans, savePlan } from '@/lib/storage';
 import type { ItineraryPlan, RecommendationItem, UserPreference } from '@/types';
 
 type RoutePath = '/' | '/planning' | '/recommendation' | '/itinerary' | '/saved';
+const ROUTE_LIST: RoutePath[] = ['/', '/planning', '/recommendation', '/itinerary', '/saved'];
 
 const CITIES = ['重庆', '成都', '北京', '西安', '上海'];
 const DURATION = [1, 2, 3, 4, 5];
@@ -62,7 +63,7 @@ function App() {
   useEffect(() => {
     const onPopState = () => {
       const current = window.location.pathname as RoutePath;
-      setRoute(['/', '/planning', '/recommendation', '/itinerary', '/saved'].includes(current) ? current : '/');
+      setRoute(ROUTE_LIST.includes(current) ? current : '/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     window.addEventListener('popstate', onPopState);
@@ -172,6 +173,15 @@ function App() {
           />
         )}
 
+        {route === '/recommendation' && recommendations.length === 0 && (
+          <Card>
+            <CardContent className="flex items-center justify-between gap-3 pt-6">
+              <span>当前还没有推荐内容，请先填写偏好并生成推荐。</span>
+              <Button onClick={() => navigate('/planning')}>去偏好页</Button>
+            </CardContent>
+          </Card>
+        )}
+
         {route === '/itinerary' && plan && (
           <ItineraryPage
             pref={pref}
@@ -196,7 +206,12 @@ function App() {
         )}
 
         {route === '/itinerary' && !plan && (
-          <Card><CardContent className="pt-6">暂无行程，请先完成推荐选择并生成行程。</CardContent></Card>
+          <Card>
+            <CardContent className="flex items-center justify-between gap-3 pt-6">
+              <span>暂无行程，请先完成推荐选择并生成行程。</span>
+              <Button onClick={() => navigate('/planning')}>去开始规划</Button>
+            </CardContent>
+          </Card>
         )}
 
         {route === '/saved' && (
