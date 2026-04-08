@@ -29,8 +29,8 @@ const dayThemes = [
 const slotRules: Record<string, Array<'attraction' | 'food' | 'culture'>> = {
   上午: ['attraction', 'culture'],
   中午: ['food'],
-  下午: ['attraction', 'culture'],
-  晚上: ['culture', 'food', 'attraction'],
+  下午: ['culture', 'attraction'],
+  晚上: ['culture', 'attraction'],
 };
 
 function score(item: Omit<RecommendationItem, 'selected'>, pref: UserPreference): number {
@@ -57,19 +57,22 @@ export function generateRecommendations(pref: UserPreference, seed = 0): Recomme
   return [...attractions, ...foods, ...cultures].map((item) => ({ ...item, selected: false }));
 }
 
-function pickUnique(pool: RecommendationItem[], used: Set<string>, fallback: RecommendationItem[]): RecommendationItem {
-  const found = pool.find((item) => !used.has(item.id));
-  if (found) return found;
-  const backup = fallback.find((item) => !used.has(item.id));
-  return backup ?? fallback[0];
-}
-
-function itemForSlot(slot: string, selected: RecommendationItem[], used: Set<string>, pref: UserPreference): RecommendationItem {
+function itemForSlot(
+  slot: string,
+  selected: RecommendationItem[],
+  usedIds: Set<string>,
+  usedTypes: Set<string>,
+  pref: UserPreference,
+): RecommendationItem | null {
   const preferred = slotRules[slot]
     .flatMap((type) => selected.filter((item) => item.type === type))
+    .filter((item) => !usedTypes.has(item.type))
+    .filter((item) => !usedIds.has(item.id))
+    .filter((item) => !(slot === '上午' && item.tags.some((tag) => ['夜景', '夜生活'].includes(tag))))
+    .filter((item) => !(slot === '晚上' && (item.category.includes('博物') || item.name.includes('博物馆'))))
     .filter((item) => !(slot === '晚上' && pref.staminaLevel === 'light' && item.estimatedDuration.includes('3')));
 
-  return pickUnique(preferred, used, selected);
+  return preferred[0] ?? null;
 }
 
 function toItineraryItem(item: RecommendationItem, timeSlot: string, pref: UserPreference): ItineraryItem {
@@ -87,35 +90,93 @@ function toItineraryItem(item: RecommendationItem, timeSlot: string, pref: UserP
   };
 }
 
-function buildDayItems(selected: RecommendationItem[], pref: UserPreference): ItineraryItem[] {
+function validateDay(items: ItineraryItem[]): boolean {
+  if (items.length < 3 || items.length > 4) return false;
+  const slots = items.map((item) => item.timeSlot);
+  if (!slots.includes('中午')) return false;
+  if (!items.some((item) => item.type === 'food')) return false;
+  if (!items.some((item) => item.type === 'attraction' || item.type === 'culture')) return false;
+
+  const typeSet = new Set(items.map((item) => item.type));
+  if (typeSet.size !== items.length) return false;
+
+  const idSet = new Set(items.map((item) => item.name));
+  if (idSet.size !== items.length) return false;
+
+  const illegalMorning = items.some((item) => item.timeSlot === '上午' && item.reason.includes('夜'));
+  const illegalNight = items.some(
+    (item) => item.timeSlot === '晚上' && (item.name.includes('博物馆') || item.description.includes('博物馆')),
+  );
+  if (illegalMorning || illegalNight) return false;
+
+  return true;
+}
+
+function buildDayItems(selected: RecommendationItem[], pref: UserPreference, seedOffset = 0): ItineraryItem[] {
   const usedIds = new Set<string>();
-  const slotPlan = pref.staminaLevel === 'high' ? ['上午', '中午', '下午', '晚上'] : ['上午', '中午', '晚上'];
-  if (pref.staminaLevel !== 'light' && pref.travelStyle !== 'relaxed') slotPlan.splice(2, 0, '下午');
-
+  const usedTypes = new Set<string>();
+  const rankedSelected = [...selected].sort((a, b) => score(b, pref) - score(a, pref) + (a.id > b.id ? 1 : -1) * seedOffset);
+  const slots = pref.staminaLevel === 'high' ? ['上午', '中午', '下午', '晚上'] : ['上午', '中午', '下午'];
   const items: ItineraryItem[] = [];
-  const maxItems = pref.staminaLevel === 'high' ? 4 : 3;
 
-  slotPlan.slice(0, maxItems).forEach((slot) => {
-    const picked = itemForSlot(slot, selected, usedIds, pref);
-    if (!picked || usedIds.has(picked.id)) return;
+  slots.forEach((slot) => {
+    const picked = itemForSlot(slot, rankedSelected, usedIds, usedTypes, pref);
+    if (!picked) return;
     usedIds.add(picked.id);
+    usedTypes.add(picked.type);
     items.push(toItineraryItem(picked, slot, pref));
   });
 
-  // 补位：选中内容不足时自动补相似项，避免重复感
+  // 晚上补位：必须是夜景/夜生活倾向
+  if (!items.find((it) => it.timeSlot === '晚上') && pref.staminaLevel === 'high') {
+    const nightPick = rankedSelected.find(
+      (item) =>
+        !usedIds.has(item.id) &&
+        !usedTypes.has(item.type) &&
+        (item.tags.includes('夜景') || item.tags.includes('夜生活') || item.category.includes('演出')),
+    );
+    if (nightPick) {
+      usedIds.add(nightPick.id);
+      usedTypes.add(nightPick.type);
+      items.push(toItineraryItem(nightPick, '晚上', pref));
+    }
+  }
+
+  // 补位：内容不足时用相似推荐补位，但不重复类型/名称
   if (items.length < 3) {
-    const fallback = generateRecommendations(pref).filter((item) => !usedIds.has(item.id));
+    const fallback = generateRecommendations(pref).filter((item) => !usedIds.has(item.id) && !usedTypes.has(item.type));
     while (items.length < 3 && fallback.length) {
       const next = fallback.shift();
       if (!next) break;
-      if (items.some((it) => it.type === 'food' && next.type === 'food')) continue;
       usedIds.add(next.id);
-      const slot = ['上午', '中午', '下午', '晚上'][items.length];
-      items.push(toItineraryItem(next, slot, pref));
+      usedTypes.add(next.type);
+      const nextSlot = items.some((it) => it.timeSlot === '中午') ? '下午' : '中午';
+      items.push(toItineraryItem(next, nextSlot, pref));
     }
   }
 
   return items.slice(0, 4);
+}
+
+function buildValidatedDay(selected: RecommendationItem[], pref: UserPreference, dayIndex: number): ItineraryItem[] {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const generated = buildDayItems(selected, pref, dayIndex + attempt);
+    if (validateDay(generated)) return generated;
+  }
+
+  // 最终兜底：硬约束不满足时，使用固定骨架重新组装
+  const fallback = generateRecommendations(pref);
+  const morning = fallback.find((i) => i.type === 'attraction') ?? fallback[0];
+  const lunch = fallback.find((i) => i.type === 'food' && i.id !== morning?.id) ?? fallback.find((i) => i.id !== morning?.id) ?? morning;
+  const afternoon =
+    fallback.find((i) => i.type === 'culture' && i.id !== morning?.id && i.id !== lunch?.id) ??
+    fallback.find((i) => i.id !== morning?.id && i.id !== lunch?.id) ??
+    morning;
+  return [
+    toItineraryItem(morning, '上午', pref),
+    toItineraryItem(lunch, '中午', pref),
+    toItineraryItem(afternoon, '下午', pref),
+  ];
 }
 
 export function generateItineraryPlan(pref: UserPreference, selectedItems: RecommendationItem[]): ItineraryPlan {
@@ -124,7 +185,7 @@ export function generateItineraryPlan(pref: UserPreference, selectedItems: Recom
     dayNumber: idx + 1,
     title: `Day ${idx + 1} · ${dayThemes[idx % dayThemes.length].title}`,
     story: dayThemes[idx % dayThemes.length].story,
-    items: buildDayItems(usable, pref),
+    items: buildValidatedDay(usable, pref, idx),
   }));
 
   return {
@@ -146,7 +207,7 @@ export function regenerateDay(plan: ItineraryPlan, dayNumber: number): Itinerary
           ...day,
           title: `Day ${dayNumber} · ${dayThemes[(dayNumber + 1) % dayThemes.length].title}`,
           story: dayThemes[(dayNumber + 1) % dayThemes.length].story,
-          items: buildDayItems(plan.selectedItems, plan.preference),
+          items: buildValidatedDay(plan.selectedItems, plan.preference, dayNumber),
         }
       : day,
   );
