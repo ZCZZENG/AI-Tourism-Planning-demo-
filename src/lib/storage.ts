@@ -1,51 +1,24 @@
-import type { Itinerary } from '@/types';
+import type { ItineraryPlan } from '@/types';
 
-const STORAGE_KEY = 'lingxi-itineraries';
+const STORAGE_KEY = 'lingxi-demo-itineraries';
 
-export function saveItinerary(itinerary: Itinerary): void {
+export function getSavedPlans(): ItineraryPlan[] {
   try {
-    const existing = getSavedItineraries();
-    const updated = [itinerary, ...existing];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  } catch (error) {
-    console.error('Failed to save itinerary:', error);
-  }
-}
-
-export function getSavedItineraries(): Itinerary[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Failed to get itineraries:', error);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as ItineraryPlan[]) : [];
+    return parsed.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  } catch {
     return [];
   }
 }
 
-export function deleteItinerary(id: string): void {
-  try {
-    const existing = getSavedItineraries();
-    const updated = existing.filter(it => it.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  } catch (error) {
-    console.error('Failed to delete itinerary:', error);
-  }
+export function savePlan(plan: ItineraryPlan): void {
+  const existing = getSavedPlans();
+  const deduped = existing.filter((item) => item.id !== plan.id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([plan, ...deduped]));
 }
 
-export function getItineraryById(id: string): Itinerary | null {
-  try {
-    const existing = getSavedItineraries();
-    return existing.find(it => it.id === id) || null;
-  } catch (error) {
-    console.error('Failed to get itinerary:', error);
-    return null;
-  }
-}
-
-export function clearAllItineraries(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Failed to clear itineraries:', error);
-  }
+export function deletePlan(id: string): void {
+  const existing = getSavedPlans().filter((item) => item.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 }
