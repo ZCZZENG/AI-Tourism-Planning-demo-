@@ -577,3 +577,5 @@ function MultiRow({
     </div>
   );
 }
+
+export default App;
