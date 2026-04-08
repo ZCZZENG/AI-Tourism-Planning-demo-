@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,14 +72,15 @@ function App() {
   }, []);
 
   const selectedCount = useMemo(() => recommendations.filter((i) => i.selected).length, [recommendations]);
+
   const requiredValid = Boolean(
     pref.destination &&
-    pref.duration &&
-    pref.budgetLevel &&
-    pref.interests.length > 0 &&
-    pref.travelStyle &&
-    pref.staminaLevel &&
-    pref.transportPreferences.length > 0,
+      pref.duration &&
+      pref.budgetLevel &&
+      pref.interests.length > 0 &&
+      pref.travelStyle &&
+      pref.staminaLevel &&
+      pref.transportPreferences.length > 0,
   );
 
   const updateMulti = (list: string[], value: string) =>
@@ -347,7 +348,9 @@ function PlanningPage({
           </div>
         </CardContent>
       </Card>
-      <Button disabled={!requiredValid || loading} onClick={onGenerate}>{loading ? '生成中...' : '生成推荐'}</Button>
+      <Button disabled={!requiredValid || loading} onClick={onGenerate}>
+        {loading ? '生成中...' : '生成推荐'}
+      </Button>
     </div>
   );
 }
@@ -375,7 +378,11 @@ function RecommendationPage({
         当前偏好：
         <Badge>{pref.destination}</Badge>
         <Badge>{pref.duration}天</Badge>
-        {pref.interests.map((i) => <Badge key={i} variant="outline">{i}</Badge>)}
+        {pref.interests.map((i) => (
+          <Badge key={i} variant="outline">
+            {i}
+          </Badge>
+        ))}
       </div>
       <div className="flex items-center justify-between">
         <p className="font-medium">已选 {selectedCount} 项</p>
@@ -395,7 +402,9 @@ function RecommendationPage({
               <p>推荐理由：{item.reason}</p>
               <div className="flex gap-2">
                 <Badge variant="outline">{item.popularity === 'hot' ? '热门' : '小众'}</Badge>
-                <Badge variant="outline">{item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}</Badge>
+                <Badge variant="outline">
+                  {item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}
+                </Badge>
               </div>
               <Button className="w-full" variant={item.selected ? 'secondary' : 'default'} onClick={() => onToggle(item.id)}>
                 {item.selected ? '取消选择' : '加入行程'}
@@ -431,7 +440,9 @@ function ItineraryPage({
       <Card>
         <CardHeader>
           <CardTitle>{plan.destination} · {plan.duration} 天行程</CardTitle>
-          <CardDescription>偏好摘要：目的地 {pref.destination} ｜ 天数 {pref.duration} ｜ 兴趣 {pref.interests.join('、')}</CardDescription>
+          <CardDescription>
+            偏好摘要：目的地 {pref.destination} ｜ 天数 {pref.duration} ｜ 兴趣 {pref.interests.join('、')}
+          </CardDescription>
         </CardHeader>
       </Card>
 
@@ -454,7 +465,9 @@ function ItineraryPage({
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <strong>{item.timeSlot} · {item.name}</strong>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">{item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}</Badge>
+                    <Badge variant="outline">
+                      {item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}
+                    </Badge>
                     <Button size="sm" variant="ghost" onClick={() => onDeleteItem(day.dayNumber, item.id)}>删除</Button>
                   </div>
                 </div>
@@ -483,7 +496,11 @@ function SavedPage({
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-semibold">已保存行程</h2>
-      {saved.length === 0 && <Card><CardContent className="pt-6">暂无已保存行程</CardContent></Card>}
+      {saved.length === 0 && (
+        <Card>
+          <CardContent className="pt-6">暂无已保存行程</CardContent>
+        </Card>
+      )}
       {saved.map((p) => (
         <Card key={p.id}>
           <CardHeader>
@@ -519,6 +536,7 @@ function OptionRow({
         {options.map((o) => (
           <button
             key={o}
+            type="button"
             className={`rounded-full border px-3 py-1 text-sm ${current === o ? 'bg-slate-900 text-white' : 'bg-white'}`}
             onClick={() => onSelect(o)}
           >
@@ -548,6 +566,7 @@ function MultiRow({
         {options.map((o) => (
           <button
             key={o}
+            type="button"
             className={`rounded-full border px-3 py-1 text-sm ${selected.includes(o) ? 'bg-primary text-white' : 'bg-white'}`}
             onClick={() => onToggle(o)}
           >
@@ -558,5 +577,3 @@ function MultiRow({
     </div>
   );
 }
-
-export default App;
