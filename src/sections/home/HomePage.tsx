@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useRef, type RefObject } from 'react';
+import { useCallback, useRef, type RefObject } from 'react';
 
 type HomePageProps = {
   onStartPlanning: () => void;
@@ -18,9 +18,9 @@ const steps = [
 export function HomePage({ onStartPlanning, onViewSample }: HomePageProps) {
   const sampleRef = useRef<HTMLElement | null>(null);
 
-  const scrollToSample = () => {
+  const scrollToSample = useCallback(() => {
     sampleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  }, []);
 
   return (
     <div className="space-y-8">

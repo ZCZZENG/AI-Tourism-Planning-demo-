@@ -46,6 +46,10 @@ function score(item: Omit<RecommendationItem, 'selected'>, pref: UserPreference)
   return s;
 }
 
+function isNightOrNightlife(item: RecommendationItem): boolean {
+  return item.tags.includes('夜景') || item.tags.includes('夜生活') || item.category.includes('江景') || item.category.includes('演出');
+}
+
 export function generateRecommendations(pref: UserPreference, seed = 0): RecommendationItem[] {
   const cityData = catalog[pref.destination] ?? catalog.重庆;
   const ranked = [...cityData].sort((a, b) => score(b, pref) - score(a, pref) + (a.id > b.id ? 1 : -1) * (seed % 3));
@@ -68,7 +72,7 @@ function itemForSlot(
     .flatMap((type) => selected.filter((item) => item.type === type))
     .filter((item) => !usedTypes.has(item.type))
     .filter((item) => !usedIds.has(item.id))
-    .filter((item) => !(slot === '上午' && item.tags.some((tag) => ['夜景', '夜生活'].includes(tag))))
+    .filter((item) => !(slot === '上午' && isNightOrNightlife(item)))
     .filter((item) => !(slot === '晚上' && (item.category.includes('博物') || item.name.includes('博物馆'))))
     .filter((item) => !(slot === '晚上' && pref.staminaLevel === 'light' && item.estimatedDuration.includes('3')));
 
@@ -104,10 +108,13 @@ function validateDay(items: ItineraryItem[]): boolean {
   if (idSet.size !== items.length) return false;
 
   const illegalMorning = items.some((item) => item.timeSlot === '上午' && item.reason.includes('夜'));
+  const illegalNoon = items.some((item) => item.timeSlot === '中午' && item.type !== 'food');
   const illegalNight = items.some(
     (item) => item.timeSlot === '晚上' && (item.name.includes('博物馆') || item.description.includes('博物馆')),
   );
-  if (illegalMorning || illegalNight) return false;
+  const descSet = new Set(items.map((item) => item.description));
+  if (descSet.size !== items.length) return false;
+  if (illegalMorning || illegalNoon || illegalNight) return false;
 
   return true;
 }

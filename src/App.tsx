@@ -27,6 +27,18 @@ const STYLE = [
   { value: 'foodie', label: '美食优先' },
   { value: 'atmosphere', label: '氛围感体验' },
 ] as const;
+const STYLE_LABEL_MAP: Record<UserPreference['travelStyle'], string> = {
+  relaxed: '轻松悠闲',
+  cultural: '文化深度',
+  efficient: '高效打卡',
+  foodie: '美食优先',
+  atmosphere: '氛围感体验',
+};
+const BUDGET_LABEL_MAP: Record<UserPreference['budgetLevel'], string> = {
+  low: '低预算',
+  medium: '中预算',
+  high: '高预算',
+};
 const STAMINA = [
   { value: 'light', label: '轻度' },
   { value: 'medium', label: '中等' },
@@ -397,7 +409,7 @@ function RecommendationPage({
   };
 
   const fitPreference = (item: RecommendationItem) =>
-    [pref.travelStyle === 'cultural' ? '文化深度' : '', pref.travelStyle === 'foodie' ? '美食优先' : '', ...pref.interests, ...item.tags]
+    [STYLE_LABEL_MAP[pref.travelStyle], ...pref.interests, ...item.tags]
       .filter(Boolean)
       .slice(0, 3)
       .join(' / ');
@@ -532,8 +544,8 @@ function SavedPage({
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2 text-xs">
-              <Badge variant="outline">风格：{p.preference.travelStyle}</Badge>
-              <Badge variant="outline">预算：{p.budgetLevel}</Badge>
+              <Badge variant="outline">风格：{STYLE_LABEL_MAP[p.preference.travelStyle]}</Badge>
+              <Badge variant="outline">预算：{BUDGET_LABEL_MAP[p.budgetLevel]}</Badge>
               {p.preference.interests.slice(0, 2).map((interest) => <Badge key={interest} variant="outline">{interest}</Badge>)}
             </div>
             <p className="text-sm text-muted-foreground">Day 1 预览：{p.days[0]?.title ?? '待生成'}</p>
