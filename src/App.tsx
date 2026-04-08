@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { HomePage } from '@/sections/home/HomePage';
 import { generateItineraryPlan, generateRecommendations, regenerateDay } from '@/data/planner';
 import { deletePlan, getSavedPlans, savePlan } from '@/lib/storage';
 import type { ItineraryPlan, RecommendationItem, UserPreference } from '@/types';
@@ -144,7 +145,7 @@ function App() {
         onStartPlanning={() => navigate('/planning')}
         onViewSaved={() => navigate('/saved')}
       >
-        {route === '/' && <LandingPage onStartPlanning={() => navigate('/planning')} />}
+        {route === '/' && <HomePage onStartPlanning={() => navigate('/planning')} onViewSample={() => navigate('/itinerary')} />}
 
         {route === '/planning' && (
           <PlanningPage
@@ -241,34 +242,6 @@ function AppLayout({
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </>
-  );
-}
-
-function LandingPage({ onStartPlanning }: { onStartPlanning: () => void }) {
-  return (
-    <div className="space-y-6">
-      <Card className="mx-auto max-w-3xl text-center">
-        <CardHeader>
-          <CardTitle className="text-3xl">AI 个性化旅游规划</CardTitle>
-          <CardDescription className="text-base">根据预算、兴趣、时间生成专属行程</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button size="lg" onClick={onStartPlanning}>开始规划</Button>
-        </CardContent>
-      </Card>
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          { title: '个性化推荐', desc: '按预算、兴趣、风格输出候选内容池。' },
-          { title: '文化深度体验', desc: '融合地方文化体验，不只打卡景点。' },
-          { title: '一键生成行程', desc: '自动排布上午/中午/下午/晚上行程。' },
-        ].map((feature) => (
-          <Card key={feature.title}>
-            <CardHeader><CardTitle className="text-lg">{feature.title}</CardTitle></CardHeader>
-            <CardContent><p className="text-sm text-muted-foreground">{feature.desc}</p></CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
   );
 }
 
