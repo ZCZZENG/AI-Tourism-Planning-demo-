@@ -5,6 +5,7 @@ import { useRef, type RefObject } from 'react';
 
 type HomePageProps = {
   onStartPlanning: () => void;
+  onViewSample?: () => void;
 };
 
 const steps = [
@@ -14,7 +15,7 @@ const steps = [
   { icon: '🗺️', title: '生成专属行程', desc: '输出结构化 Day by Day 行程并可微调。' },
 ];
 
-export function HomePage({ onStartPlanning }: HomePageProps) {
+export function HomePage({ onStartPlanning, onViewSample }: HomePageProps) {
   const sampleRef = useRef<HTMLElement | null>(null);
 
   const scrollToSample = () => {
@@ -23,7 +24,7 @@ export function HomePage({ onStartPlanning }: HomePageProps) {
 
   return (
     <div className="space-y-8">
-      <HeroSection onStartPlanning={onStartPlanning} onViewSample={scrollToSample} />
+      <HeroSection onStartPlanning={onStartPlanning} onViewSample={onViewSample ?? scrollToSample} />
       <HowItWorksSection />
       <OutputPreviewSection />
       <DifferentiatorSection />
