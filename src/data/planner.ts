@@ -33,6 +33,12 @@ const slotRules: Record<string, Array<'attraction' | 'food' | 'culture'>> = {
   晚上: ['culture', 'attraction'],
 };
 
+const costByBudget = {
+  low: ['¥0-30', '¥30-80'],
+  medium: ['¥30-100', '¥80-180'],
+  high: ['¥100-220', '¥180-350'],
+};
+
 function score(item: Omit<RecommendationItem, 'selected'>, pref: UserPreference): number {
   let s = 0;
   if (pref.interests.some((interest) => item.tags.includes(interest))) s += 3;
@@ -80,6 +86,7 @@ function itemForSlot(
 }
 
 function toItineraryItem(item: RecommendationItem, timeSlot: string, pref: UserPreference): ItineraryItem {
+  const fallbackCost = costByBudget[pref.budgetLevel][timeSlot === '中午' ? 0 : 1];
   return {
     id: `${item.id}-${timeSlot}-${Math.random().toString(16).slice(2, 7)}`,
     timeSlot,
@@ -88,7 +95,7 @@ function toItineraryItem(item: RecommendationItem, timeSlot: string, pref: UserP
     description: item.shortDescription,
     reason: item.reason,
     estimatedDuration: item.estimatedDuration,
-    estimatedCost: item.estimatedCost,
+    estimatedCost: item.estimatedCost || fallbackCost,
     transportTip: `建议优先使用${pref.transportPreferences[0] ?? '地铁'}，同一区域串联减少折返。`,
     replaceable: true,
   };
