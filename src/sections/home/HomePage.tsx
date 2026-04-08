@@ -1,11 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCallback, useRef, type RefObject } from 'react';
 
 type HomePageProps = {
   onStartPlanning: () => void;
-  onViewSample?: () => void;
+  onViewSample: () => void;
 };
 
 const steps = [
@@ -16,24 +15,18 @@ const steps = [
 ];
 
 export function HomePage({ onStartPlanning, onViewSample }: HomePageProps) {
-  const sampleRef = useRef<HTMLElement | null>(null);
-
-  const scrollToSample = useCallback(() => {
-    sampleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
   return (
     <div className="space-y-8">
-      <HeroSection onStartPlanning={onStartPlanning} onViewSample={onViewSample ?? scrollToSample} />
+      <HeroSection onStartPlanning={onStartPlanning} onViewSample={onViewSample} />
       <HowItWorksSection />
       <OutputPreviewSection />
       <DifferentiatorSection />
-      <SampleItinerarySection onStartPlanning={onStartPlanning} sampleRef={sampleRef} />
+      <SampleItinerarySection onStartPlanning={onStartPlanning} />
     </div>
   );
 }
 
-function HeroSection({ onStartPlanning, onViewSample }: { onStartPlanning: () => void; onViewSample: () => void }) {
+function HeroSection({ onStartPlanning, onViewSample }: HomePageProps) {
   return (
     <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
       <Card className="border-slate-200">
@@ -60,8 +53,12 @@ function HeroSection({ onStartPlanning, onViewSample }: { onStartPlanning: () =>
             <Badge variant="outline">中预算</Badge>
             <Badge variant="outline">文化深度</Badge>
           </div>
-          <p className="rounded-md border bg-white p-3 text-xs text-slate-600">3天内串联老街、人文与夜景，节奏松弛但内容完整。</p>
-          <p className="rounded-md bg-amber-50 p-2 text-xs font-medium text-amber-700">高亮行程点：洪崖洞夜景 + 江边步行段</p>
+          <p className="rounded-md border bg-white p-3 text-xs text-slate-600">
+            3天内串联老街、人文与夜景，节奏松弛但内容完整。
+          </p>
+          <p className="rounded-md bg-amber-50 p-2 text-xs font-medium text-amber-700">
+            高亮行程点：洪崖洞夜景 + 江边步行段
+          </p>
           {['Day 1 山城初识', 'Day 2 老街与江景', 'Day 3 博物馆与夜市'].map((d) => (
             <div key={d} className="rounded-md border bg-white p-3 font-medium">{d}</div>
           ))}
@@ -101,33 +98,65 @@ function OutputPreviewSection() {
       <h2 className="text-2xl font-semibold">你将获得什么</h2>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle className="text-base">景点推荐</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">景点推荐</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <ul className="list-disc space-y-1 pl-4"><li>洪崖洞</li><li>李子坝</li><li>磁器口</li></ul>
-            <div className="flex gap-2"><Badge variant="outline">夜景</Badge><Badge variant="outline">地标</Badge><Badge variant="outline">老街</Badge><Badge variant="outline">2h-3h</Badge></div>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>洪崖洞</li>
+              <li>李子坝</li>
+              <li>磁器口</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">夜景</Badge>
+              <Badge variant="outline">地标</Badge>
+              <Badge variant="outline">老街</Badge>
+              <Badge variant="outline">2h-3h</Badge>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">美食推荐</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">美食推荐</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <ul className="list-disc space-y-1 pl-4"><li>重庆小面（早餐）</li><li>老火锅（晚餐）</li><li>江边夜市小吃（宵夜）</li></ul>
-            <div className="flex gap-2"><Badge variant="outline">人均¥25-120</Badge><Badge variant="outline">地道口味</Badge><Badge variant="outline">分时段推荐</Badge></div>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>重庆小面（早餐）</li>
+              <li>老火锅（晚餐）</li>
+              <li>江边夜市小吃（宵夜）</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">人均¥25-120</Badge>
+              <Badge variant="outline">地道口味</Badge>
+              <Badge variant="outline">分时段推荐</Badge>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">文化体验</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">文化体验</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <ul className="list-disc space-y-1 pl-4"><li>川剧变脸</li><li>山城步道</li><li>老茶馆体验</li></ul>
-            <div className="flex gap-2"><Badge variant="outline">非遗</Badge><Badge variant="outline">在地文化</Badge><Badge variant="outline">可替换</Badge></div>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>川剧变脸</li>
+              <li>山城步道</li>
+              <li>老茶馆体验</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">非遗</Badge>
+              <Badge variant="outline">在地文化</Badge>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">每日行程单</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">每日行程单</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="rounded-md border bg-slate-50 p-3">
+            <div className="rounded-md border bg-white p-3">
               <p>上午：解放碑城市漫步</p>
               <p>下午：山城步道 + 老街体验</p>
               <p>晚上：洪崖洞夜景 + 火锅</p>
@@ -145,23 +174,32 @@ function DifferentiatorSection() {
     <section className="space-y-3">
       <h2 className="text-2xl font-semibold">为什么不是普通攻略网站</h2>
       <div className="grid gap-4 md:grid-cols-3">
-        <Card><CardContent className="pt-6"><p className="font-semibold">按预算筛选推荐内容</p><p className="mt-2 text-sm text-muted-foreground">自动过滤高/中/低预算项目，减少无效信息。</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="font-semibold">不只推荐景点，也补充文化体验</p><p className="mt-2 text-sm text-muted-foreground">从“看景点”升级到“体验一座城市”。</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="font-semibold">自动生成上午 / 下午 / 晚上的行程节奏</p><p className="mt-2 text-sm text-muted-foreground">避免一天安排混乱，形成可执行日程。</p></CardContent></Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="font-semibold">按预算筛选推荐内容</p>
+            <p className="mt-2 text-sm text-muted-foreground">自动过滤高/中/低预算项目，减少无效信息。</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="font-semibold">不只推荐景点，也补充文化体验</p>
+            <p className="mt-2 text-sm text-muted-foreground">从“看景点”升级到“体验一座城市”。</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="font-semibold">自动生成上午 / 下午 / 晚上的行程节奏</p>
+            <p className="mt-2 text-sm text-muted-foreground">避免一天安排混乱，形成可执行日程。</p>
+          </CardContent>
+        </Card>
       </div>
     </section>
   );
 }
 
-function SampleItinerarySection({
-  onStartPlanning,
-  sampleRef,
-}: {
-  onStartPlanning: () => void;
-  sampleRef: RefObject<HTMLElement | null>;
-}) {
+function SampleItinerarySection({ onStartPlanning }: { onStartPlanning: () => void }) {
   return (
-    <section ref={sampleRef} className="space-y-3">
+    <section className="space-y-3">
       <h2 className="text-2xl font-semibold">示例行程</h2>
       <Card className="border-slate-200">
         <CardHeader>

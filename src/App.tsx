@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ const BUDGET = [
   { value: 'medium', label: '中预算', desc: '1000-3000' },
   { value: 'high', label: '高预算', desc: '3000+' },
 ] as const;
-const INTERESTS = ['美食', '历史文化', '自然风景', '城市漫步', '艺术展览', '夜生活', '打卡拍照', '小众体验'];
+
 const STYLE = [
   { value: 'relaxed', label: '轻松悠闲' },
   { value: 'cultural', label: '文化深度' },
@@ -27,6 +27,7 @@ const STYLE = [
   { value: 'foodie', label: '美食优先' },
   { value: 'atmosphere', label: '氛围感体验' },
 ] as const;
+
 const STYLE_LABEL_MAP: Record<UserPreference['travelStyle'], string> = {
   relaxed: '轻松悠闲',
   cultural: '文化深度',
@@ -34,11 +35,14 @@ const STYLE_LABEL_MAP: Record<UserPreference['travelStyle'], string> = {
   foodie: '美食优先',
   atmosphere: '氛围感体验',
 };
+
 const BUDGET_LABEL_MAP: Record<UserPreference['budgetLevel'], string> = {
   low: '低预算',
   medium: '中预算',
   high: '高预算',
 };
+
+const INTERESTS = ['美食', '历史文化', '自然风景', '城市漫步', '艺术展览', '夜生活', '打卡拍照', '小众体验'];
 const STAMINA = [
   { value: 'light', label: '轻度' },
   { value: 'medium', label: '中等' },
@@ -84,14 +88,15 @@ function App() {
   }, []);
 
   const selectedCount = useMemo(() => recommendations.filter((i) => i.selected).length, [recommendations]);
+
   const requiredValid = Boolean(
     pref.destination &&
-    pref.duration &&
-    pref.budgetLevel &&
-    pref.interests.length > 0 &&
-    pref.travelStyle &&
-    pref.staminaLevel &&
-    pref.transportPreferences.length > 0,
+      pref.duration &&
+      pref.budgetLevel &&
+      pref.interests.length > 0 &&
+      pref.travelStyle &&
+      pref.staminaLevel &&
+      pref.transportPreferences.length > 0,
   );
 
   const updateMulti = (list: string[], value: string) =>
@@ -158,7 +163,12 @@ function App() {
         onStartPlanning={() => navigate('/planning')}
         onViewSaved={() => navigate('/saved')}
       >
-        {route === '/' && <HomePage onStartPlanning={() => navigate('/planning')} />}
+        {route === '/' && (
+          <HomePage
+            onStartPlanning={() => navigate('/planning')}
+            onViewSample={() => navigate('/itinerary')}
+          />
+        )}
 
         {route === '/planning' && (
           <PlanningPage
@@ -179,7 +189,9 @@ function App() {
             loading={loading}
             onRefresh={() => void runRecommendations(true)}
             onToggle={(id) =>
-              setRecommendations((prev) => prev.map((item) => (item.id === id ? { ...item, selected: !item.selected } : item)))
+              setRecommendations((prev) =>
+                prev.map((item) => (item.id === id ? { ...item, selected: !item.selected } : item)),
+              )
             }
             onGeneratePlan={() => void generatePlan()}
           />
@@ -194,21 +206,27 @@ function App() {
           </Card>
         )}
 
-        {route === '/itinerary' && plan && (
+        {route === '/itinerary'        {route === '/itinerary' && plan && (
           <ItineraryPage
             pref={pref}
             plan={plan}
-            onRegenerateAll={() => setPlan(generateItineraryPlan(pref, recommendations.filter((i) => i.selected)))}
+            onRegenerateAll={() =>
+              setPlan(generateItineraryPlan(pref, recommendations.filter((i) => i.selected)))
+            }
             onBackToPlanning={() => navigate('/planning')}
             onSave={saveCurrentPlan}
-            onRegenerateDay={(dayNumber) => setPlan((prev) => (prev ? regenerateDay(prev, dayNumber) : prev))}
+            onRegenerateDay={(dayNumber) =>
+              setPlan((prev) => (prev ? regenerateDay(prev, dayNumber) : prev))
+            }
             onDeleteItem={(dayNumber, itemId) =>
               setPlan((prev) =>
                 prev
                   ? {
                       ...prev,
                       days: prev.days.map((day) =>
-                        day.dayNumber === dayNumber ? { ...day, items: day.items.filter((it) => it.id !== itemId) } : day,
+                        day.dayNumber === dayNumber
+                          ? { ...day, items: day.items.filter((it) => it.id !== itemId) }
+                          : day,
                       ),
                     }
                   : prev,
@@ -260,10 +278,14 @@ function AppLayout({
     <>
       <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <button className="text-xl font-bold" onClick={onGoHome}>灵犀逸行</button>
+          <button className="text-xl font-bold" onClick={onGoHome}>
+            灵犀逸行
+          </button>
           <div className="space-x-2">
             <Button onClick={onStartPlanning}>开始规划</Button>
-            <Button variant="outline" onClick={onViewSaved}>保存行程</Button>
+            <Button variant="outline" onClick={onViewSaved}>
+              保存行程
+            </Button>
           </div>
         </div>
       </header>
@@ -300,66 +322,103 @@ function PlanningPage({
               onChange={(e) => setPref({ ...pref, destination: e.target.value })}
               placeholder="输入或选择城市"
             />
-            <datalist id="cities">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
+            <datalist id="cities">
+              {CITIES.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </label>
+
           <OptionRow
             title="出行时长 *"
             options={DURATION.map((d) => `${d} 天`)}
             current={`${pref.duration} 天`}
             onSelect={(v) => setPref({ ...pref, duration: Number(v[0]) })}
           />
+
           <OptionRow
             title="出行预算 *"
             options={BUDGET.map((b) => `${b.label} (${b.desc})`)}
-            current={`${BUDGET.find((b) => b.value === pref.budgetLevel)?.label} (${BUDGET.find((b) => b.value === pref.budgetLevel)?.desc})`}
+            current={`${
+              BUDGET.find((b) => b.value === pref.budgetLevel)?.label
+            } (${BUDGET.find((b) => b.value === pref.budgetLevel)?.desc})`}
             onSelect={(v) =>
               setPref({
                 ...pref,
-                budgetLevel: BUDGET.find((b) => `${b.label} (${b.desc})` === v)?.value ?? 'medium',
+                budgetLevel:
+                  BUDGET.find((b) => `${b.label} (${b.desc})` === v)?.value ?? 'medium',
               })
             }
           />
+
           <MultiRow
             title="兴趣偏好 *"
             options={INTERESTS}
             selected={pref.interests}
             onToggle={(v) => setPref({ ...pref, interests: updateMulti(pref.interests, v) })}
           />
+
           <OptionRow
             title="旅行风格 *"
             options={STYLE.map((s) => s.label)}
             current={STYLE.find((s) => s.value === pref.travelStyle)?.label ?? ''}
-            onSelect={(v) => setPref({ ...pref, travelStyle: STYLE.find((s) => s.label === v)?.value ?? 'relaxed' })}
+            onSelect={(v) =>
+              setPref({
+                ...pref,
+                travelStyle: STYLE.find((s) => s.label === v)?.value ?? 'relaxed',
+              })
+            }
           />
+
           <OptionRow
             title="每日体力强度 *"
             options={STAMINA.map((s) => s.label)}
             current={STAMINA.find((s) => s.value === pref.staminaLevel)?.label ?? ''}
-            onSelect={(v) => setPref({ ...pref, staminaLevel: STAMINA.find((s) => s.label === v)?.value ?? 'medium' })}
+            onSelect={(v) =>
+              setPref({
+                ...pref,
+                staminaLevel: STAMINA.find((s) => s.label === v)?.value ?? 'medium',
+              })
+            }
           />
+
           <MultiRow
             title="出行方式偏好 *"
             options={TRANSPORTS}
             selected={pref.transportPreferences}
-            onToggle={(v) => setPref({ ...pref, transportPreferences: updateMulti(pref.transportPreferences, v) })}
+            onToggle={(v) =>
+              setPref({
+                ...pref,
+                transportPreferences: updateMulti(pref.transportPreferences, v),
+              })
+            }
           />
+
           <OptionRow
             title="同行人数 *"
             options={COMPANIONS}
             current={pref.companionCount}
             onSelect={(v) => setPref({ ...pref, companionCount: v })}
           />
+
           <div className="grid gap-3 md:grid-cols-2">
             <Input
               placeholder="可选：出发地"
               value={pref.departureCity ?? ''}
               onChange={(e) => setPref({ ...pref, departureCity: e.target.value })}
             />
-            <Input type="date" value={pref.startDate ?? ''} onChange={(e) => setPref({ ...pref, startDate: e.target.value })} />
+            <Input
+              type="date"
+              value={pref.startDate ?? ''}
+              onChange={(e) => setPref({ ...pref, startDate: e.target.value })}
+            />
           </div>
         </CardContent>
       </Card>
-      <Button disabled={!requiredValid || loading} onClick={onGenerate}>{loading ? '生成中...' : '生成推荐'}</Button>
+
+      <Button disabled={!requiredValid || loading} onClick={onGenerate}>
+        {loading ? '生成中...' : '生成推荐'}
+      </Button>
     </div>
   );
 }
@@ -389,19 +448,25 @@ function RecommendationPage({
 
   const slotSuggestion = (item: RecommendationItem) => {
     if (item.type === 'food') return '中午';
-    if (item.tags.some((tag) => ['夜景', '夜生活'].includes(tag)) || item.category.includes('夜')) return '晚上';
+    if (item.tags.some((tag) => ['夜景', '夜生活'].includes(tag)) || item.category.includes('夜')) {
+      return '晚上';
+    }
     if (item.type === 'culture') return '下午';
     return '上午';
   };
 
   const intensity = (item: RecommendationItem) => {
     if (item.estimatedDuration.includes('3')) return '高强度';
-    if (item.estimatedDuration.includes('2') || item.estimatedDuration.includes('1.5')) return '中等';
+    if (item.estimatedDuration.includes('2') || item.estimatedDuration.includes('1.5')) {
+      return '中等';
+    }
     return '轻松';
   };
 
   const areaTag = (item: RecommendationItem) => {
-    if (item.name.includes('洪崖洞') || item.name.includes('解放') || item.name.includes('十八梯')) return '渝中';
+    if (item.name.includes('洪崖洞') || item.name.includes('解放') || item.name.includes('十八梯')) {
+      return '渝中';
+    }
     if (item.name.includes('南山') || item.name.includes('江游')) return '南岸';
     if (item.name.includes('磁器口')) return '磁器口周边';
     if (item.name.includes('李子坝') || item.name.includes('鹅岭')) return '两路口周边';
@@ -409,7 +474,12 @@ function RecommendationPage({
   };
 
   const fitPreference = (item: RecommendationItem) =>
-    [STYLE_LABEL_MAP[pref.travelStyle], ...pref.interests, ...item.tags]
+    [
+      pref.travelStyle === 'cultural' ? '文化深度' : '',
+      pref.travelStyle === 'foodie' ? '美食优先' : '',
+      ...pref.interests,
+      ...item.tags,
+    ]
       .filter(Boolean)
       .slice(0, 3)
       .join(' / ');
@@ -420,15 +490,27 @@ function RecommendationPage({
         当前偏好：
         <Badge>{pref.destination}</Badge>
         <Badge>{pref.duration}天</Badge>
-        {pref.interests.map((i) => <Badge key={i} variant="outline">{i}</Badge>)}
+        <Badge>{BUDGET_LABEL_MAP[pref.budgetLevel]}</Badge>
+        <Badge>{STYLE_LABEL_MAP[pref.travelStyle]}</Badge>
+        {pref.interests.map((i) => (
+          <Badge key={i} variant="outline">
+            {i}
+          </Badge>
+        ))}
       </div>
+
       <div className="flex items-center justify-between">
         <p className="font-medium">已选 {selectedCount} 项</p>
         <div className="space-x-2">
-          <Button variant="outline" onClick={onRefresh}>换一批</Button>
-          <Button variant="outline" onClick={onRefresh}>重新生成推荐</Button>
+          <Button variant="outline" onClick={onRefresh}>
+            换一批
+          </Button>
+          <Button variant="outline" onClick={onRefresh}>
+            重新生成推荐
+          </Button>
         </div>
       </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {recommendations.map((item) => (
           <Card key={item.id} className={item.selected ? 'ring-2 ring-primary' : ''}>
@@ -440,21 +522,34 @@ function RecommendationPage({
               <p>推荐理由：{item.reason}</p>
               <div className="flex gap-2">
                 <Badge variant="outline">{item.popularity === 'hot' ? '热门' : '小众'}</Badge>
-                <Badge variant="outline">{item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}</Badge>
+                <Badge variant="outline">
+                  {item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}
+                </Badge>
               </div>
               <div className="rounded-md border bg-slate-50 p-2 text-xs text-slate-600">
                 <p>适合偏好：{fitPreference(item) || '城市漫步 / 文化深度'}</p>
-                <p>预算友好度：{budgetFriendly(item.estimatedCost)} ｜ 建议时段：{slotSuggestion(item)}</p>
-                <p>体验强度：{intensity(item)} ｜ 区域：{areaTag(item)}</p>
+                <p>
+                  预算友好度：{budgetFriendly(item.estimatedCost)} ｜ 建议时段：{slotSuggestion(item)}
+                </p>
+                <p>
+                  体验强度：{intensity(item)} ｜ 区域：{areaTag(item)}
+                </p>
               </div>
-              <Button className="w-full" variant={item.selected ? 'secondary' : 'default'} onClick={() => onToggle(item.id)}>
+              <Button
+                className="w-full"
+                variant={item.selected ? 'secondary' : 'default'}
+                onClick={() => onToggle(item.id)}
+              >
                 {item.selected ? '取消选择' : '加入行程'}
               </Button>
             </CardContent>
           </Card>
         ))}
       </div>
-      <Button size="lg" disabled={selectedCount < 2 || loading} onClick={onGeneratePlan}>生成行程</Button>
+
+      <Button size="lg" disabled={selectedCount < 2 || loading} onClick={onGeneratePlan}>
+        生成行程
+      </Button>
     </div>
   );
 }
@@ -480,32 +575,56 @@ function ItineraryPage({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>{plan.destination} · {plan.duration} 天行程</CardTitle>
-          <CardDescription>偏好摘要：目的地 {pref.destination} ｜ 天数 {pref.duration} ｜ 兴趣 {pref.interests.join('、')}</CardDescription>
+          <CardTitle>
+            {plan.destination} · {plan.duration} 天行程
+          </CardTitle>
+          <CardDescription>
+            偏好摘要：目的地 {pref.destination} ｜ 天数 {pref.duration} ｜ 兴趣{' '}
+            {pref.interests.join('、')}
+          </CardDescription>
         </CardHeader>
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={onRegenerateAll}>重新生成整份行程</Button>
-        <Button variant="outline" onClick={onBackToPlanning}>返回修改偏好</Button>
+        <Button variant="outline" onClick={onRegenerateAll}>
+          重新生成整份行程
+        </Button>
+        <Button variant="outline" onClick={onBackToPlanning}>
+          返回修改偏好
+        </Button>
         <Button onClick={onSave}>保存行程</Button>
       </div>
 
       {plan.days.map((day) => (
         <Card key={day.dayNumber}>
           <CardHeader>
-            <CardTitle>Day {day.dayNumber} · {day.title.replace(`Day ${day.dayNumber} · `, '')}</CardTitle>
+            <CardTitle>
+              Day {day.dayNumber} · {day.title.replace(`Day ${day.dayNumber} · `, '')}
+            </CardTitle>
             <CardDescription>{day.story}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button size="sm" variant="outline" onClick={() => onRegenerateDay(day.dayNumber)}>仅重生成某一天</Button>
+            <Button size="sm" variant="outline" onClick={() => onRegenerateDay(day.dayNumber)}>
+              仅重生成某一天
+            </Button>
+
             {day.items.map((item) => (
               <div key={item.id} className="rounded-lg border bg-white p-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <strong>{item.timeSlot} · {item.name}</strong>
+                  <strong>
+                    {item.timeSlot} · {item.name}
+                  </strong>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">{item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}</Badge>
-                    <Button size="sm" variant="ghost" onClick={() => onDeleteItem(day.dayNumber, item.id)}>删除</Button>
+                    <Badge variant="outline">
+                      {item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onDeleteItem(day.dayNumber, item.id)}
+                    >
+                      删除
+                    </Button>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">{item.description}</p>
@@ -533,26 +652,44 @@ function SavedPage({
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-semibold">已保存行程</h2>
-      {saved.length === 0 && <Card><CardContent className="pt-6">暂无已保存行程</CardContent></Card>}
+      {saved.length === 0 && (
+        <Card>
+          <CardContent className="pt-6">暂无已保存行程</CardContent>
+        </Card>
+      )}
+
       {saved.map((p) => (
         <Card key={p.id} className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>{p.destination} · {p.duration} 天</CardTitle>
+            <CardTitle>
+              {p.destination} · {p.duration} 天
+            </CardTitle>
             <CardDescription>
-              创建时间：{new Date(p.createdAt).toLocaleDateString()} {new Date(p.createdAt).toLocaleTimeString()}
+              创建时间：{new Date(p.createdAt).toLocaleDateString()}{' '}
+              {new Date(p.createdAt).toLocaleTimeString()}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2 text-xs">
               <Badge variant="outline">风格：{STYLE_LABEL_MAP[p.preference.travelStyle]}</Badge>
               <Badge variant="outline">预算：{BUDGET_LABEL_MAP[p.budgetLevel]}</Badge>
-              {p.preference.interests.slice(0, 2).map((interest) => <Badge key={interest} variant="outline">{interest}</Badge>)}
+              {p.preference.interests.slice(0, 2).map((interest) => (
+                <Badge key={interest} variant="outline">
+                  {interest}
+                </Badge>
+              ))}
             </div>
-            <p className="text-sm text-muted-foreground">Day 1 预览：{p.days[0]?.title ?? '待生成'}</p>
+            <p className="text-sm text-muted-foreground">
+              Day 1 预览：{p.days[0]?.title ?? '待生成'}
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => onOpen(p)}>打开详情</Button>
-              <Button variant="outline" onClick={() => onExport(p)}>导出 Markdown</Button>
-              <Button variant="destructive" onClick={() => onDelete(p.id)}>删除</Button>
+              <Button variant="outline" onClick={() => onExport(p)}>
+                导出 Markdown
+              </Button>
+              <Button variant="destructive" onClick={() => onDelete(p.id)}>
+                删除
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -579,7 +716,10 @@ function OptionRow({
         {options.map((o) => (
           <button
             key={o}
-            className={`rounded-full border px-3 py-1 text-sm ${current === o ? 'bg-slate-900 text-white' : 'bg-white'}`}
+            type="button"
+            className={`rounded-full border px-3 py-1 text-sm ${
+              current === o ? 'bg-slate-900 text-white' : 'bg-white'
+            }`}
             onClick={() => onSelect(o)}
           >
             {o}
@@ -608,7 +748,10 @@ function MultiRow({
         {options.map((o) => (
           <button
             key={o}
-            className={`rounded-full border px-3 py-1 text-sm ${selected.includes(o) ? 'bg-primary text-white' : 'bg-white'}`}
+            type="button"
+            className={`rounded-full border px-3 py-1 text-sm ${
+              selected.includes(o) ? 'bg-primary text-white' : 'bg-white'
+            }`}
             onClick={() => onToggle(o)}
           >
             {o}
