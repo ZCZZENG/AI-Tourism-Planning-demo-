@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { HomePage } from '@/sections/home/HomePage';
 import { generateItineraryPlan, generateRecommendations, getSamplePlan, regenerateDay } from '@/data/planner';
 import { deletePlan, getSavedPlans, savePlan } from '@/lib/storage';
@@ -55,6 +56,45 @@ const STAMINA = [
 const TRANSPORTS = ['步行', '地铁', '公交', '打车', '共享单车'];
 const COMPANIONS = ['1 人', '2 人', '3-4 人', '5 人以上'];
 
+const TYPE_CONFIG: Record<string, { label: string; icon: string; bandClass: string; badgeClass: string; dotClass: string }> = {
+  attraction: {
+    label: '景点',
+    icon: '🏛️',
+    bandClass: 'bg-teal-500',
+    badgeClass: 'border-teal-200 text-teal-700 bg-teal-50',
+    dotClass: 'bg-teal-500',
+  },
+  food: {
+    label: '美食',
+    icon: '🍜',
+    bandClass: 'bg-amber-500',
+    badgeClass: 'border-amber-200 text-amber-700 bg-amber-50',
+    dotClass: 'bg-amber-500',
+  },
+  culture: {
+    label: '文化',
+    icon: '🎭',
+    bandClass: 'bg-purple-500',
+    badgeClass: 'border-purple-200 text-purple-700 bg-purple-50',
+    dotClass: 'bg-purple-500',
+  },
+  transport: {
+    label: '交通',
+    icon: '🚌',
+    bandClass: 'bg-slate-400',
+    badgeClass: 'border-slate-200 text-slate-600 bg-slate-50',
+    dotClass: 'bg-slate-400',
+  },
+};
+
+const DAY_GRADIENTS = [
+  'from-[#264653] to-[#2a9d8f]',
+  'from-teal-800 to-teal-600',
+  'from-violet-800 to-violet-600',
+  'from-slate-700 to-slate-500',
+  'from-emerald-800 to-emerald-600',
+];
+
 const initialPref: UserPreference = {
   destination: '',
   duration: 3,
@@ -86,10 +126,8 @@ function App() {
       setRoute(ROUTE_LIST.includes(current) ? current : '/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-
     window.addEventListener('popstate', onPopState);
     onPopState();
-
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
@@ -112,37 +150,23 @@ function App() {
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 
   const runRecommendations = async (regen = false) => {
-    if (!requiredValid) {
-      toast.error('请先补全必填项');
-      return;
-    }
-
+    if (!requiredValid) { toast.error('请先补全必填项'); return; }
     setLoading(true);
     await new Promise((r) => setTimeout(r, 700));
-
     const nextSeed = regen ? seed + 1 : seed;
     setSeed(nextSeed);
     setRecommendations(generateRecommendations(pref, nextSeed));
-
     setLoading(false);
     navigate('/recommendation');
   };
 
   const generatePlan = async () => {
-    if (selectedCount < 2) {
-      toast.error('请至少选择 2 个项目后再生成行程');
-      return;
-    }
-
+    if (selectedCount < 2) { toast.error('请至少选择 2 个项目后再生成行程'); return; }
     setLoading(true);
     const loadingTexts = ['正在分析你的旅行偏好', '正在组合景点与文化体验', '正在生成故事化行程'];
     toast.loading(loadingTexts[Math.floor(Math.random() * loadingTexts.length)], { id: 'gen' });
-
     await new Promise((r) => setTimeout(r, 1000));
-
-    const result = generateItineraryPlan(pref, recommendations.filter((i) => i.selected));
-    setPlan(result);
-
+    setPlan(generateItineraryPlan(pref, recommendations.filter((i) => i.selected)));
     toast.success('行程生成完成', { id: 'gen' });
     setLoading(false);
     navigate('/itinerary');
@@ -156,27 +180,13 @@ function App() {
   };
 
   const exportMarkdown = (p: ItineraryPlan) => {
-    const lines = [
-      `# ${p.destination} ${p.duration}天行程`,
-      '',
-      `创建时间：${new Date(p.createdAt).toLocaleString()}`,
-      '',
-    ];
-
+    const lines = [`# ${p.destination} ${p.duration}天行程`, '', `创建时间：${new Date(p.createdAt).toLocaleString()}`, ''];
     p.days.forEach((d) => {
-      lines.push(`## ${d.title}`);
-      lines.push(d.story);
-      lines.push('');
-      d.items.forEach((i) => {
-        lines.push(`- **${i.timeSlot}** ${i.name}（${i.type}）- ${i.description}`);
-      });
+      lines.push(`## ${d.title}`, d.story, '');
+      d.items.forEach((i) => lines.push(`- **${i.timeSlot}** ${i.name}（${i.type}）- ${i.description}`));
       lines.push('');
     });
-
-    const blob = new Blob([lines.join('\n')], {
-      type: 'text/markdown;charset=utf-8',
-    });
-
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -186,9 +196,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <Toaster richColors position="top-center" />
-
       <AppLayout
         onGoHome={() => navigate('/')}
         onStartPlanning={() => navigate('/planning')}
@@ -197,10 +206,7 @@ function App() {
         {route === '/' && (
           <HomePage
             onStartPlanning={() => navigate('/planning')}
-            onViewSample={() => {
-              setPlan(getSamplePlan());
-              navigate('/itinerary');
-            }}
+            onViewSample={() => { setPlan(getSamplePlan()); navigate('/itinerary'); }}
           />
         )}
 
@@ -224,9 +230,7 @@ function App() {
             onRefresh={() => void runRecommendations(true)}
             onToggle={(id) =>
               setRecommendations((prev) =>
-                prev.map((item) =>
-                  item.id === id ? { ...item, selected: !item.selected } : item,
-                ),
+                prev.map((item) => item.id === id ? { ...item, selected: !item.selected } : item),
               )
             }
             onGeneratePlan={() => void generatePlan()}
@@ -235,9 +239,9 @@ function App() {
         )}
 
         {route === '/recommendation' && recommendations.length === 0 && (
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="flex items-center justify-between gap-3 pt-6">
-              <span>当前还没有推荐内容，请先填写偏好并生成推荐。</span>
+              <span className="text-muted-foreground">当前还没有推荐内容，请先填写偏好并生成推荐。</span>
               <Button onClick={() => navigate('/planning')}>去偏好页</Button>
             </CardContent>
           </Card>
@@ -247,38 +251,29 @@ function App() {
           <ItineraryPage
             pref={pref}
             plan={plan}
-            onRegenerateAll={() =>
-              setPlan(generateItineraryPlan(pref, recommendations.filter((i) => i.selected)))
-            }
+            onRegenerateAll={() => setPlan(generateItineraryPlan(pref, recommendations.filter((i) => i.selected)))}
             onBackToPlanning={() => navigate('/planning')}
             onSave={saveCurrentPlan}
-            onRegenerateDay={(dayNumber) =>
-              setPlan((prev) => (prev ? regenerateDay(prev, dayNumber) : prev))
-            }
+            onRegenerateDay={(dayNumber) => setPlan((prev) => (prev ? regenerateDay(prev, dayNumber) : prev))}
             onDeleteItem={(dayNumber, itemId) =>
               setPlan((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      days: prev.days.map((day) =>
-                        day.dayNumber === dayNumber
-                          ? {
-                              ...day,
-                              items: day.items.filter((it) => it.id !== itemId),
-                            }
-                          : day,
-                      ),
-                    }
-                  : prev,
+                prev ? {
+                  ...prev,
+                  days: prev.days.map((day) =>
+                    day.dayNumber === dayNumber
+                      ? { ...day, items: day.items.filter((it) => it.id !== itemId) }
+                      : day,
+                  ),
+                } : prev,
               )
             }
           />
         )}
 
         {route === '/itinerary' && !plan && (
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="flex items-center justify-between gap-3 pt-6">
-              <span>暂无行程，请先完成推荐选择并生成行程。</span>
+              <span className="text-muted-foreground">暂无行程，请先完成推荐选择并生成行程。</span>
               <Button onClick={() => navigate('/planning')}>去开始规划</Button>
             </CardContent>
           </Card>
@@ -287,14 +282,8 @@ function App() {
         {route === '/saved' && (
           <SavedPage
             saved={saved}
-            onOpen={(p) => {
-              setPlan(p);
-              navigate('/itinerary');
-            }}
-            onDelete={(id) => {
-              deletePlan(id);
-              setSaved(getSavedPlans());
-            }}
+            onOpen={(p) => { setPlan(p); navigate('/itinerary'); }}
+            onDelete={(id) => { deletePlan(id); setSaved(getSavedPlans()); }}
             onExport={exportMarkdown}
           />
         )}
@@ -302,6 +291,8 @@ function App() {
     </div>
   );
 }
+
+// ── Layout ─────────────────────────────────────────────────────────────────────
 
 function AppLayout({
   children,
@@ -316,21 +307,54 @@ function AppLayout({
 }) {
   return (
     <>
-      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <button className="text-xl font-bold" onClick={onGoHome}>
-            灵犀逸行
+      <header className="sticky top-0 z-50 bg-[#264653] shadow-lg">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <button onClick={onGoHome} className="group flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2a9d8f] shadow-sm transition-transform group-hover:scale-105">
+              <span className="text-lg leading-none text-white">✈</span>
+            </div>
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-base font-bold text-white" style={{ fontFamily: 'Noto Serif SC' }}>
+                灵犀逸行
+              </span>
+              <span className="mt-0.5 text-[11px] text-teal-300">AI 旅游规划</span>
+            </div>
           </button>
-          <div className="space-x-2">
-            <Button onClick={onStartPlanning}>开始规划</Button>
-            <Button variant="outline" onClick={onViewSaved}>
-              保存行程
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={onStartPlanning}
+              className="text-sm text-teal-100 hover:bg-white/10 hover:text-white"
+            >
+              开始规划
+            </Button>
+            <Button
+              onClick={onViewSaved}
+              className="bg-[#e9c46a] text-sm font-semibold text-[#264653] hover:bg-[#f4d587]"
+            >
+              我的行程
             </Button>
           </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </>
+  );
+}
+
+// ── Planning Page ──────────────────────────────────────────────────────────────
+
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2 pt-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {title}
+        </p>
+      </CardHeader>
+      <CardContent className="grid gap-5 pb-5">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -350,119 +374,140 @@ function PlanningPage({
   updateMulti: (list: string[], value: string) => string[];
 }) {
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold">偏好采集</h2>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold" style={{ fontFamily: 'Noto Serif SC' }}>
+          填写旅行偏好
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">带 * 为必填，完成后为你生成专属推荐</p>
+      </div>
 
-      <Card>
-        <CardContent className="grid gap-4 pt-6">
-          <label className="space-y-2">
-            <span>旅行目的地 *</span>
+      <FormSection title="目的地 & 基本信息">
+        <label className="space-y-1.5">
+          <span className="text-sm font-medium text-slate-700">目的地 *</span>
+          <Input
+            list="cities"
+            value={pref.destination}
+            onChange={(e) => setPref({ ...pref, destination: e.target.value })}
+            placeholder="输入或选择城市，如：重庆、成都"
+            className="bg-white"
+          />
+          <datalist id="cities">
+            {CITIES.map((c) => <option key={c} value={c} />)}
+          </datalist>
+        </label>
+
+        <OptionRow
+          title="出行时长 *"
+          options={DURATION.map((d) => `${d} 天`)}
+          current={`${pref.duration} 天`}
+          onSelect={(v) => setPref({ ...pref, duration: Number(v[0]) })}
+        />
+
+        <OptionRow
+          title="出行预算 *"
+          options={BUDGET.map((b) => `${b.label}（${b.desc}）`)}
+          current={`${BUDGET.find((b) => b.value === pref.budgetLevel)?.label}（${BUDGET.find((b) => b.value === pref.budgetLevel)?.desc}）`}
+          onSelect={(v) =>
+            setPref({
+              ...pref,
+              budgetLevel: BUDGET.find((b) => `${b.label}（${b.desc}）` === v)?.value ?? 'medium',
+            })
+          }
+        />
+      </FormSection>
+
+      <FormSection title="兴趣与旅行风格">
+        <MultiRow
+          title="兴趣偏好 *（可多选）"
+          options={INTERESTS}
+          selected={pref.interests}
+          onToggle={(v) => setPref({ ...pref, interests: updateMulti(pref.interests, v) })}
+        />
+
+        <OptionRow
+          title="旅行风格 *"
+          options={STYLE.map((s) => s.label)}
+          current={STYLE.find((s) => s.value === pref.travelStyle)?.label ?? ''}
+          onSelect={(v) =>
+            setPref({ ...pref, travelStyle: STYLE.find((s) => s.label === v)?.value ?? 'relaxed' })
+          }
+        />
+
+        <OptionRow
+          title="每日体力强度 *"
+          options={STAMINA.map((s) => s.label)}
+          current={STAMINA.find((s) => s.value === pref.staminaLevel)?.label ?? ''}
+          onSelect={(v) =>
+            setPref({ ...pref, staminaLevel: STAMINA.find((s) => s.label === v)?.value ?? 'medium' })
+          }
+        />
+      </FormSection>
+
+      <FormSection title="出行方式（可选）">
+        <MultiRow
+          title="偏好交通方式 *"
+          options={TRANSPORTS}
+          selected={pref.transportPreferences}
+          onToggle={(v) =>
+            setPref({ ...pref, transportPreferences: updateMulti(pref.transportPreferences, v) })
+          }
+        />
+
+        <OptionRow
+          title="同行人数 *"
+          options={COMPANIONS}
+          current={pref.companionCount}
+          onSelect={(v) => setPref({ ...pref, companionCount: v })}
+        />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">出发地（可选）</span>
             <Input
-              list="cities"
-              value={pref.destination}
-              onChange={(e) => setPref({ ...pref, destination: e.target.value })}
-              placeholder="输入或选择城市"
-            />
-            <datalist id="cities">
-              {CITIES.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-          </label>
-
-          <OptionRow
-            title="出行时长 *"
-            options={DURATION.map((d) => `${d} 天`)}
-            current={`${pref.duration} 天`}
-            onSelect={(v) => setPref({ ...pref, duration: Number(v[0]) })}
-          />
-
-          <OptionRow
-            title="出行预算 *"
-            options={BUDGET.map((b) => `${b.label} (${b.desc})`)}
-            current={`${
-              BUDGET.find((b) => b.value === pref.budgetLevel)?.label
-            } (${BUDGET.find((b) => b.value === pref.budgetLevel)?.desc})`}
-            onSelect={(v) =>
-              setPref({
-                ...pref,
-                budgetLevel:
-                  BUDGET.find((b) => `${b.label} (${b.desc})` === v)?.value ?? 'medium',
-              })
-            }
-          />
-
-          <MultiRow
-            title="兴趣偏好 *"
-            options={INTERESTS}
-            selected={pref.interests}
-            onToggle={(v) => setPref({ ...pref, interests: updateMulti(pref.interests, v) })}
-          />
-
-          <OptionRow
-            title="旅行风格 *"
-            options={STYLE.map((s) => s.label)}
-            current={STYLE.find((s) => s.value === pref.travelStyle)?.label ?? ''}
-            onSelect={(v) =>
-              setPref({
-                ...pref,
-                travelStyle: STYLE.find((s) => s.label === v)?.value ?? 'relaxed',
-              })
-            }
-          />
-
-          <OptionRow
-            title="每日体力强度 *"
-            options={STAMINA.map((s) => s.label)}
-            current={STAMINA.find((s) => s.value === pref.staminaLevel)?.label ?? ''}
-            onSelect={(v) =>
-              setPref({
-                ...pref,
-                staminaLevel: STAMINA.find((s) => s.label === v)?.value ?? 'medium',
-              })
-            }
-          />
-
-          <MultiRow
-            title="出行方式偏好 *"
-            options={TRANSPORTS}
-            selected={pref.transportPreferences}
-            onToggle={(v) =>
-              setPref({
-                ...pref,
-                transportPreferences: updateMulti(pref.transportPreferences, v),
-              })
-            }
-          />
-
-          <OptionRow
-            title="同行人数 *"
-            options={COMPANIONS}
-            current={pref.companionCount}
-            onSelect={(v) => setPref({ ...pref, companionCount: v })}
-          />
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <Input
-              placeholder="可选：出发地"
+              placeholder="如：上海"
               value={pref.departureCity ?? ''}
               onChange={(e) => setPref({ ...pref, departureCity: e.target.value })}
+              className="bg-white"
             />
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">出发日期（可选）</span>
             <Input
               type="date"
               value={pref.startDate ?? ''}
               onChange={(e) => setPref({ ...pref, startDate: e.target.value })}
+              className="bg-white"
             />
-          </div>
-        </CardContent>
-      </Card>
+          </label>
+        </div>
+      </FormSection>
 
-      <Button disabled={!requiredValid || loading} onClick={onGenerate}>
-        {loading ? '生成中...' : '生成推荐'}
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          size="lg"
+          disabled={!requiredValid || loading}
+          onClick={onGenerate}
+          className="bg-[#2a9d8f] px-8 font-semibold text-white hover:bg-[#21867a]"
+        >
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              生成中…
+            </span>
+          ) : (
+            '生成专属推荐 →'
+          )}
+        </Button>
+        {!requiredValid && (
+          <p className="text-sm text-muted-foreground">请补全所有带 * 的必填项</p>
+        )}
+      </div>
     </div>
   );
 }
+
+// ── Recommendation Page ────────────────────────────────────────────────────────
 
 function RecommendationPage({
   pref,
@@ -483,122 +528,149 @@ function RecommendationPage({
   onGeneratePlan: () => void;
   onBackToPlanning: () => void;
 }) {
-  const budgetFriendly = (cost: string) => {
-    if (/¥0|¥1|¥2|¥3|¥4|¥5|¥6|¥7|¥8/.test(cost)) return '低';
-    if (/¥9|¥1[0-9]{2}/.test(cost)) return '中';
-    return '高';
-  };
-
-  const slotSuggestion = (item: RecommendationItem) => {
-    if (item.type === 'food') return '中午';
-    if (item.tags.some((tag) => ['夜景', '夜生活'].includes(tag)) || item.category.includes('夜')) {
-      return '晚上';
-    }
-    if (item.type === 'culture') return '下午';
-    return '上午';
-  };
-
-  const intensity = (item: RecommendationItem) => {
-    if (item.estimatedDuration.includes('3')) return '高强度';
-    if (item.estimatedDuration.includes('2') || item.estimatedDuration.includes('1.5')) {
-      return '中等';
-    }
-    return '轻松';
-  };
-
-  const areaTag = (item: RecommendationItem) => {
-    if (item.name.includes('洪崖洞') || item.name.includes('解放') || item.name.includes('十八梯')) {
-      return '渝中';
-    }
-    if (item.name.includes('南山') || item.name.includes('江游')) return '南岸';
-    if (item.name.includes('磁器口')) return '磁器口周边';
-    if (item.name.includes('李子坝') || item.name.includes('鹅岭')) return '两路口周边';
-    return '主城区';
-  };
-
-  const fitPreference = (item: RecommendationItem) =>
-    [
-      pref.travelStyle === 'cultural' ? '文化深度' : '',
-      pref.travelStyle === 'foodie' ? '美食优先' : '',
-      ...pref.interests,
-      ...item.tags,
-    ]
-      .filter(Boolean)
-      .slice(0, 3)
-      .join(' / ');
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 rounded-lg border bg-white p-3">
-        当前偏好：
-        <Badge>{pref.destination}</Badge>
-        <Badge>{pref.duration}天</Badge>
-        <Badge>{BUDGET_LABEL_MAP[pref.budgetLevel]}</Badge>
-        <Badge>{STYLE_LABEL_MAP[pref.travelStyle]}</Badge>
-        {pref.interests.map((i) => (
-          <Badge key={i} variant="outline">
-            {i}
-          </Badge>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold" style={{ fontFamily: 'Noto Serif SC' }}>
+          选择感兴趣的内容
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">至少选择 2 项，用于生成你的专属行程</p>
+      </div>
+
+      {/* 偏好摘要 */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-white px-4 py-3 shadow-xs">
+        <span className="mr-1 text-xs text-muted-foreground">当前偏好：</span>
+        <Badge className="bg-[#264653] text-white">{pref.destination}</Badge>
+        <Badge variant="outline">{pref.duration} 天</Badge>
+        <Badge variant="outline">{BUDGET_LABEL_MAP[pref.budgetLevel]}</Badge>
+        <Badge variant="outline">{STYLE_LABEL_MAP[pref.travelStyle]}</Badge>
+        {pref.interests.slice(0, 3).map((i) => (
+          <Badge key={i} variant="outline" className="border-teal-200 text-teal-600">{i}</Badge>
         ))}
       </div>
 
+      {/* 操作栏 */}
       <div className="flex items-center justify-between">
-        <p className="font-medium">已选 {selectedCount} 项</p>
-        <div className="space-x-2">
-          <Button variant="outline" onClick={onBackToPlanning}>
-            修改偏好
-          </Button>
-          <Button variant="outline" onClick={onRefresh}>
-            换一批
-          </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-slate-700">已选</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2a9d8f] text-sm font-bold text-white">
+            {selectedCount}
+          </span>
+          <span className="text-sm text-muted-foreground">/ {recommendations.length}</span>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onBackToPlanning}>← 修改偏好</Button>
+          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>换一批</Button>
         </div>
       </div>
 
+      {/* 卡片网格 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {recommendations.map((item) => (
-          <Card key={item.id} className={item.selected ? 'ring-2 ring-primary' : ''}>
-            <CardHeader>
-              <CardTitle className="text-base">{item.name}</CardTitle>
-              <CardDescription>{item.shortDescription}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>推荐理由：{item.reason}</p>
+        {recommendations.map((item) => {
+          const cfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.attraction;
+          return (
+            <Card
+              key={item.id}
+              className={cn(
+                'relative overflow-hidden transition-all duration-200',
+                item.selected
+                  ? 'shadow-md ring-2 ring-[#2a9d8f]'
+                  : 'shadow-xs hover:-translate-y-0.5 hover:shadow-md',
+              )}
+            >
+              {/* 类型色条 */}
+              <div className={cn('h-1.5 w-full', cfg.bandClass)} />
 
-              <div className="flex gap-2">
-                <Badge variant="outline">{item.popularity === 'hot' ? '热门' : '小众'}</Badge>
-                <Badge variant="outline">
-                  {item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}
-                </Badge>
-              </div>
+              {/* 已选角标 */}
+              {item.selected && (
+                <div className="absolute right-3 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-[#2a9d8f] text-white shadow-sm">
+                  <span className="text-xs font-bold">✓</span>
+                </div>
+              )}
 
-              <div className="rounded-md border bg-slate-50 p-2 text-xs text-slate-600">
-                <p>适合偏好：{fitPreference(item) || '城市漫步 / 文化深度'}</p>
-                <p>
-                  预算友好度：{budgetFriendly(item.estimatedCost)} ｜ 建议时段：{slotSuggestion(item)}
+              <CardHeader className="pb-2 pt-4">
+                <div className="pr-6">
+                  <div className="flex items-center gap-1.5">
+                    <span>{cfg.icon}</span>
+                    <span className="font-semibold text-slate-800">{item.name}</span>
+                    <Badge
+                      variant="outline"
+                      className={cn('ml-auto text-xs', item.popularity === 'hot' ? 'border-amber-200 text-amber-700' : 'text-slate-500')}
+                    >
+                      {item.popularity === 'hot' ? '热门' : '小众'}
+                    </Badge>
+                  </div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                    {item.shortDescription}
+                  </p>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-3 pt-0">
+                <p className="text-xs leading-relaxed text-slate-500">
+                  推荐理由：{item.reason}
                 </p>
-                <p>
-                  体验强度：{intensity(item)} ｜ 区域：{areaTag(item)}
-                </p>
-              </div>
 
-              <Button
-                className="w-full"
-                variant={item.selected ? 'secondary' : 'default'}
-                onClick={() => onToggle(item.id)}
-              >
-                {item.selected ? '取消选择' : '加入行程'}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', cfg.badgeClass)}>
+                    {cfg.label}
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
+                    {item.estimatedCost}
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
+                    {item.estimatedDuration}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {item.tags.map((tag) => (
+                    <span key={tag} className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <Button
+                  className={cn(
+                    'w-full font-medium transition-colors',
+                    item.selected
+                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-[#2a9d8f] text-white hover:bg-[#21867a]',
+                  )}
+                  onClick={() => onToggle(item.id)}
+                >
+                  {item.selected ? '取消选择' : '加入行程 +'}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <Button size="lg" disabled={selectedCount < 2 || loading} onClick={onGeneratePlan}>
-        生成行程
-      </Button>
+      {/* 悬浮生成栏 */}
+      <div className="sticky bottom-4 pt-2">
+        <div className="flex items-center gap-4 rounded-2xl border bg-white/95 px-5 py-3.5 shadow-lg backdrop-blur-sm">
+          <p className="flex-1 text-sm text-muted-foreground">
+            {selectedCount < 2
+              ? `还需选择 ${2 - selectedCount} 项`
+              : `已选 ${selectedCount} 项，可以生成行程了`}
+          </p>
+          <Button
+            size="lg"
+            disabled={selectedCount < 2 || loading}
+            onClick={onGeneratePlan}
+            className="bg-[#264653] px-6 font-semibold text-white hover:bg-[#1a3340]"
+          >
+            {loading ? '生成中…' : '生成我的行程 →'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
+
+// ── Itinerary Page ─────────────────────────────────────────────────────────────
 
 function ItineraryPage({
   pref,
@@ -618,71 +690,124 @@ function ItineraryPage({
   onDeleteItem: (dayNumber: number, itemId: string) => void;
 }) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>
+    <div className="space-y-5">
+      {/* 行程概览 */}
+      <Card className="overflow-hidden shadow-sm">
+        <div className="bg-gradient-to-r from-[#264653] to-[#2a9d8f] px-6 py-5 text-white">
+          <h2 className="text-2xl font-bold" style={{ fontFamily: 'Noto Serif SC' }}>
             {plan.destination} · {plan.duration} 天行程
-          </CardTitle>
-          <CardDescription>
-            偏好摘要：目的地 {pref.destination} ｜ 天数 {pref.duration} ｜ 兴趣{' '}
-            {pref.interests.join('、')}
-          </CardDescription>
-        </CardHeader>
+          </h2>
+          <p className="mt-1 text-sm text-teal-100">
+            {pref.interests.join(' · ')} ｜ {STYLE_LABEL_MAP[pref.travelStyle]} ｜{' '}
+            {BUDGET_LABEL_MAP[pref.budgetLevel]}
+          </p>
+        </div>
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={onRegenerateAll}>↻ 重新生成</Button>
+            <Button size="sm" variant="outline" onClick={onBackToPlanning}>← 修改偏好</Button>
+            <Button size="sm" onClick={onSave} className="bg-[#2a9d8f] text-white hover:bg-[#21867a]">
+              保存行程
+            </Button>
+          </div>
+        </CardContent>
       </Card>
 
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={onRegenerateAll}>
-          重新生成整份行程
-        </Button>
-        <Button variant="outline" onClick={onBackToPlanning}>
-          返回修改偏好
-        </Button>
-        <Button onClick={onSave}>保存行程</Button>
-      </div>
-
+      {/* Day 卡片 */}
       {plan.days.map((day) => (
-        <Card key={day.dayNumber}>
-          <CardHeader>
-            <CardTitle>
-              Day {day.dayNumber} · {day.title.replace(`Day ${day.dayNumber} · `, '')}
-            </CardTitle>
-            <CardDescription>{day.story}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button size="sm" variant="outline" onClick={() => onRegenerateDay(day.dayNumber)}>
-              仅重生成某一天
-            </Button>
+        <Card key={day.dayNumber} className="overflow-hidden shadow-sm">
+          {/* Day 头部 */}
+          <div
+            className={cn(
+              'flex items-center gap-4 bg-gradient-to-r px-6 py-4 text-white',
+              DAY_GRADIENTS[(day.dayNumber - 1) % DAY_GRADIENTS.length],
+            )}
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20 text-xl font-bold">
+              {day.dayNumber}
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-lg leading-snug" style={{ fontFamily: 'Noto Serif SC' }}>
+                {day.title.replace(`Day ${day.dayNumber} · `, '')}
+              </p>
+              <p className="mt-0.5 text-sm italic text-white/70">{day.story}</p>
+            </div>
+          </div>
 
-            {day.items.map((item) => (
-              <div key={item.id} className="rounded-lg border bg-white p-3">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <strong>
-                    {item.timeSlot} · {item.name}
-                  </strong>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {item.type === 'attraction' ? '景点' : item.type === 'food' ? '美食' : '文化'}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onDeleteItem(day.dayNumber, item.id)}
-                    >
-                      删除
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-                <p className="text-sm">推荐理由：{item.reason}</p>
+          <CardContent className="pb-5 pt-4">
+            <div className="mb-3">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onRegenerateDay(day.dayNumber)}
+                className="h-7 text-xs text-muted-foreground hover:text-foreground"
+              >
+                ↻ 重新生成本日
+              </Button>
+            </div>
+
+            {/* 时间线 */}
+            <div className="relative pl-5">
+              <div className="absolute bottom-0 left-2 top-0 w-px bg-gradient-to-b from-teal-300 via-teal-200 to-transparent" />
+              <div className="space-y-4">
+                {day.items.map((item) => {
+                  const cfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.attraction;
+                  return (
+                    <div key={item.id} className="relative">
+                      {/* 节点 */}
+                      <div
+                        className={cn(
+                          'absolute -left-[21px] top-3.5 h-3 w-3 rounded-full border-2 border-white shadow-sm',
+                          cfg.dotClass,
+                        )}
+                      />
+                      <div className="rounded-xl border bg-white p-4 shadow-xs transition-shadow hover:shadow-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                              {item.timeSlot}
+                            </span>
+                            <span className={cn('rounded-full border px-2 py-0.5 text-xs font-medium', cfg.badgeClass)}>
+                              {cfg.icon} {cfg.label}
+                            </span>
+                            <span className="font-semibold text-slate-800">{item.name}</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onDeleteItem(day.dayNumber, item.id)}
+                            className="h-7 shrink-0 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500"
+                          >
+                            移除
+                          </Button>
+                        </div>
+
+                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                          {item.description}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">💡 {item.reason}</p>
+
+                        <div className="mt-2.5 flex flex-wrap gap-3 text-xs text-slate-500">
+                          <span>⏱ {item.estimatedDuration}</span>
+                          <span>💰 {item.estimatedCost}</span>
+                          {item.transportTip && (
+                            <span className="text-teal-600">🚇 {item.transportTip}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
           </CardContent>
         </Card>
       ))}
     </div>
   );
 }
+
+// ── Saved Page ─────────────────────────────────────────────────────────────────
 
 function SavedPage({
   saved,
@@ -696,57 +821,82 @@ function SavedPage({
   onExport: (plan: ItineraryPlan) => void;
 }) {
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-semibold">已保存行程</h2>
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold" style={{ fontFamily: 'Noto Serif SC' }}>
+          已保存行程
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">数据仅保存在本地浏览器，不会上传到服务器</p>
+      </div>
 
       {saved.length === 0 && (
-        <Card>
-          <CardContent className="pt-6">暂无已保存行程</CardContent>
+        <Card className="shadow-xs">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="mb-3 text-4xl">🗺️</span>
+            <p className="font-medium text-slate-700">暂无已保存的行程</p>
+            <p className="mt-1 text-sm text-muted-foreground">生成行程后点击"保存行程"即可在这里查看</p>
+          </CardContent>
         </Card>
       )}
 
-      {saved.map((p) => (
-        <Card key={p.id} className="border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle>
-              {p.destination} · {p.duration} 天
-            </CardTitle>
-            <CardDescription>
-              创建时间：{new Date(p.createdAt).toLocaleDateString()}{' '}
-              {new Date(p.createdAt).toLocaleTimeString()}
-            </CardDescription>
-          </CardHeader>
+      <div className="grid gap-4 md:grid-cols-2">
+        {saved.map((p) => (
+          <Card key={p.id} className="overflow-hidden shadow-xs transition-shadow hover:shadow-md">
+            <div className="h-1.5 bg-gradient-to-r from-[#264653] to-[#2a9d8f]" />
+            <CardHeader className="pb-2 pt-4">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-lg" style={{ fontFamily: 'Noto Serif SC' }}>
+                  {p.destination} · {p.duration} 天
+                </CardTitle>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {new Date(p.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Day 1：{p.days[0]?.title.split(' · ')[1] ?? '—'}
+              </p>
+            </CardHeader>
 
-          <CardContent className="space-y-3">
-            <div className="flex flex-wrap gap-2 text-xs">
-              <Badge variant="outline">风格：{STYLE_LABEL_MAP[p.preference.travelStyle]}</Badge>
-              <Badge variant="outline">预算：{BUDGET_LABEL_MAP[p.budgetLevel]}</Badge>
-              {p.preference.interests.slice(0, 2).map((interest) => (
-                <Badge key={interest} variant="outline">
-                  {interest}
+            <CardContent className="space-y-3 pt-0">
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="outline" className="text-xs">
+                  {STYLE_LABEL_MAP[p.preference.travelStyle]}
                 </Badge>
-              ))}
-            </div>
+                <Badge variant="outline" className="text-xs">
+                  {BUDGET_LABEL_MAP[p.budgetLevel]}
+                </Badge>
+                {p.preference.interests.slice(0, 2).map((interest) => (
+                  <Badge key={interest} variant="outline" className="border-teal-200 text-xs text-teal-600">
+                    {interest}
+                  </Badge>
+                ))}
+              </div>
 
-            <p className="text-sm text-muted-foreground">
-              Day 1 预览：{p.days[0]?.title ?? '待生成'}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => onOpen(p)}>打开详情</Button>
-              <Button variant="outline" onClick={() => onExport(p)}>
-                导出 Markdown
-              </Button>
-              <Button variant="destructive" onClick={() => onDelete(p.id)}>
-                删除
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button size="sm" onClick={() => onOpen(p)} className="bg-[#264653] text-white hover:bg-[#1a3340]">
+                  查看行程
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => onExport(p)}>
+                  导出 Markdown
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onDelete(p.id)}
+                  className="text-red-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  删除
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
+
+// ── Shared UI Components ───────────────────────────────────────────────────────
 
 function OptionRow({
   title,
@@ -761,15 +911,18 @@ function OptionRow({
 }) {
   return (
     <div className="space-y-2">
-      <p>{title}</p>
+      <p className="text-sm font-medium text-slate-700">{title}</p>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <button
             key={o}
             type="button"
-            className={`rounded-full border px-3 py-1 text-sm ${
-              current === o ? 'bg-slate-900 text-white' : 'bg-white'
-            }`}
+            className={cn(
+              'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-150',
+              current === o
+                ? 'border-[#264653] bg-[#264653] text-white shadow-sm'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-[#2a9d8f] hover:text-[#2a9d8f]',
+            )}
             onClick={() => onSelect(o)}
           >
             {o}
@@ -793,15 +946,18 @@ function MultiRow({
 }) {
   return (
     <div className="space-y-2">
-      <p>{title}</p>
+      <p className="text-sm font-medium text-slate-700">{title}</p>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <button
             key={o}
             type="button"
-            className={`rounded-full border px-3 py-1 text-sm ${
-              selected.includes(o) ? 'bg-primary text-white' : 'bg-white'
-            }`}
+            className={cn(
+              'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-150',
+              selected.includes(o)
+                ? 'border-[#2a9d8f] bg-[#2a9d8f] text-white shadow-sm'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-[#2a9d8f] hover:text-[#2a9d8f]',
+            )}
             onClick={() => onToggle(o)}
           >
             {o}
