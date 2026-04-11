@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { HomePage } from '@/sections/home/HomePage';
-import { generateItineraryPlan, generateRecommendations, regenerateDay } from '@/data/planner';
+import { generateItineraryPlan, generateRecommendations, getSamplePlan, regenerateDay } from '@/data/planner';
 import { deletePlan, getSavedPlans, savePlan } from '@/lib/storage';
 import type { ItineraryPlan, RecommendationItem, UserPreference } from '@/types';
 
@@ -197,7 +197,10 @@ function App() {
         {route === '/' && (
           <HomePage
             onStartPlanning={() => navigate('/planning')}
-            onViewSample={() => navigate('/itinerary')}
+            onViewSample={() => {
+              setPlan(getSamplePlan());
+              navigate('/itinerary');
+            }}
           />
         )}
 
@@ -227,6 +230,7 @@ function App() {
               )
             }
             onGeneratePlan={() => void generatePlan()}
+            onBackToPlanning={() => navigate('/planning')}
           />
         )}
 
@@ -468,6 +472,7 @@ function RecommendationPage({
   onRefresh,
   onToggle,
   onGeneratePlan,
+  onBackToPlanning,
 }: {
   pref: UserPreference;
   recommendations: RecommendationItem[];
@@ -476,6 +481,7 @@ function RecommendationPage({
   onRefresh: () => void;
   onToggle: (id: string) => void;
   onGeneratePlan: () => void;
+  onBackToPlanning: () => void;
 }) {
   const budgetFriendly = (cost: string) => {
     if (/¥0|¥1|¥2|¥3|¥4|¥5|¥6|¥7|¥8/.test(cost)) return '低';
@@ -539,11 +545,11 @@ function RecommendationPage({
       <div className="flex items-center justify-between">
         <p className="font-medium">已选 {selectedCount} 项</p>
         <div className="space-x-2">
-          <Button variant="outline" onClick={onRefresh}>
-            换一批
+          <Button variant="outline" onClick={onBackToPlanning}>
+            修改偏好
           </Button>
           <Button variant="outline" onClick={onRefresh}>
-            重新生成推荐
+            换一批
           </Button>
         </div>
       </div>
